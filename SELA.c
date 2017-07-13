@@ -19,8 +19,8 @@ void imprimeEntrada (struct Entrada *entrada);
 void gaussSeidel(double** A, int size_A, double* estimativa, double w, int maximoDeIteracoes);
 void imprimeArray(double* A, int size_A);
 void imprimeArray2D(double** A, int linhas, int colunas);
-double spline( int n, double x);
-struct Spline* 
+double estimaValor(double x, struct Spline *spl);
+struct Spline* criaSpline(struct Entrada *entrada);
 
 int main(void) {
 	char buffer[1024] ;
@@ -64,12 +64,35 @@ int main(void) {
 	}
 	imprimeEntrada(&entrada1);
 
-	double** A = malloc((n-2) * sizeof(double*));
+	printf("estimativa %f \n", spline(polinomios, X, n, 0.5));
+
+	free(X);
+	free(Y);
+	free(polinomios);
+	return 0;
+}
+
+void imprimeEntrada (struct Entrada *entrada) {
+	printf("n: %d\n", entrada->n);
+	printf("X: ");
+	imprimeArray(entrada->X, entrada->n);
+	printf("Y: ");
+	imprimeArray(entrada->Y, entrada->n);
+}
+
+
+
+struct Spline* criaSpline(struct Entrada *entrada){
+	int i;
+	int n = entrada->n;
+	double *X = entrada->X;
+	double *Y = entrada->Y;
+	double** A = malloc((entrada->n-2) * sizeof(double*));
 	for (i = 0; i < (n-2); ++i) {
 		A[i] = calloc((n-1), sizeof(double));
 	}
+	double *a;
 
-	double* a;
 
 	i = 1;
 	a = A[i-1];
@@ -98,49 +121,42 @@ int main(void) {
 	gaussSeidel(A, n-2, F2+1, 1, 500);
 	imprimeArray(F2, n);
 
-	double** polinomios = malloc((n-1) * sizeof(double *));
+	struct Spline *spl = malloc(sizeof(struct Spline));
+	spl->polinomios = malloc((n-1) * sizeof(double *));
 	for (i = 0; i < n-1; ++i) {
-		polinomios[i] = malloc(4 * sizeof(double));
+		spl->polinomios[i] = malloc(4 * sizeof(double));
 	}
 	for (i = 1; i < n; ++i) {
-		polinomios[i-1][0] = F2[i-1]/(6*(X[i] - X[i-1]));
-		polinomios[i-1][1] = F2[i]/(6*(X[i] - X[i-1]));
-		polinomios[i-1][2] = Y[i-1]/(X[i] - X[i-1]) - F2[i-1]*(X[i] - X[i-1])/6;
-		polinomios[i-1][3] = Y[i]/(X[i] - X[i-1]) - F2[i]*(X[i] - X[i-1])/6;
+		spl->polinomios[i-1][0] = F2[i-1]/(6*(X[i] - X[i-1]));
+		spl->polinomios[i-1][1] = F2[i]/(6*(X[i] - X[i-1]));
+		spl->polinomios[i-1][2] = Y[i-1]/(X[i] - X[i-1]) - F2[i-1]*(X[i] - X[i-1])/6;
+		spl->polinomios[i-1][3] = Y[i]/(X[i] - X[i-1]) - F2[i]*(X[i] - X[i-1])/6;
 	}
 
-	imprimeArray2D(polinomios, n-1, 4);
-	printf("estimativa %f \n", spline(polinomios, X, n, 0.5));
+	imprimeArray2D(spl->polinomios, n-1, 4);
 
-	free(X);
-	free(Y);
 	free(A);
 	free(F2);
-	free(polinomios);
-	return 0;
+	for (i = 0; i < (n-2); ++i) {
+		free(A[i]);
+	}
+	return spl;
 }
 
-void imprimeEntrada (struct Entrada *entrada) {
-	printf("n: %d\n", entrada->n);
-	printf("X: ");
-	imprimeArray(entrada->X, entrada->n);
-	printf("Y: ");
-	imprimeArray(entrada->Y, entrada->n);
-}
-
-double spline(double** polinomios, double* X, int n, double x){
+double estimaValor(double x, struct Spline *spl){
 	int i;
-	for (i = 0; i < n-1; ++i) {
+	double *X = spl->entrada->X;
+	for (i = 0; i < spl->entrada->n-1; ++i) {
 		if (x <= X[i+1]) {
             i += 1;
             break;    
 		}
 	}
 	return (       
-		polinomios[i-1][0] * pow(X[i] - x, 3)
-		+ polinomios[i-1][1] * pow(x - X[i-1],3)
-		+ (X[i] - x)* polinomios[i-1][2]
-		+ (x - X[i-1])* polinomios[i-1][3]
+		spl->polinomios[i-1][0] * pow(X[i] - x, 3)
+		+ spl->polinomios[i-1][1] * pow(x - X[i-1],3)
+		+ (X[i] - x)* spl->polinomios[i-1][2]
+		+ (x - X[i-1])* spl->polinomios[i-1][3]
 	);
 }
 
