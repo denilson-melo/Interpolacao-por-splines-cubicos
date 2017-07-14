@@ -5,10 +5,10 @@
 double deriva(struct Spline *spl, float x, float h, int ordem){
 	switch (ordem) {
 		case 1:
-			return (1/(2*h))*(-estimaValor(x - h, spl) + estimaValor(x + h, spl));
+			return (1/(2*h))*(-estimaValor(spl, x - h) + estimaValor(spl, x + h));
 			break;
 		case 2:
-			return (1/pow(h,2))*(estimaValor(x - h, spl) - 2*estimaValor(x, spl) + estimaValor(x + h, spl));
+			return (1/pow(h,2))*(estimaValor(spl, x - h) - 2*estimaValor(spl, x) + estimaValor(spl, x + h));
 			break;
 		default:
 			return 123456;
@@ -22,10 +22,10 @@ double integra(struct Spline *spl, float a, float b, int n){
 	double E = 0;
 	for (i = 1; i < n; ++i) {
 		if (i%2 == 0) {
-			E += 4*estimaValor(i*h, spl); 
+			E += 4*estimaValor(spl, i*h); 
 		} else {
-			E += 2*estimaValor(i*h, spl);       
+			E += 2*estimaValor(spl, i*h);       
 		}
 	}
-	return (h/3)*(estimaValor(a, spl) + E + estimaValor(b, spl));
+	return (h/3)*(estimaValor(spl, a) + E + estimaValor(spl, b));
 }

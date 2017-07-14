@@ -10,6 +10,6 @@ struct Spline {
 
 struct Spline* criaSpline(struct Entrada *entrada);
 void imprimeSpline (struct Spline *spl);
-double estimaValor(float x, struct Spline *spl);
+double estimaValor (struct Spline *spl, float x);
 
 #endif

@@ -1,2 +1,4 @@
-projeto2: main.c helpers.c erro.c entrada-e-saida.c derivacao-e-integracao.c spline.c
-	gcc -o projeto 2 main.c helpers.c erro.c entrada-e-saida.c derivacao-e-integracao.c spline.c -lm -Wall
+C_FILES = $(wildcard src/*.c)
+
+projeto2: projeto2 $(C_FILES)
+	gcc -o projeto2 $(C_FILES) -lm -Wall

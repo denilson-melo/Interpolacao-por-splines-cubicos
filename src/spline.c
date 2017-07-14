@@ -89,7 +89,7 @@ struct Spline* criaSpline(struct Entrada *entrada){
 	return spl;
 }
 
-double estimaValor(float x, struct Spline *spl){
+double estimaValor(struct Spline *spl, float x){
 	int i;
 	double *X = spl->entrada->X;
 	for (i = 0; i < spl->entrada->n-1; ++i) {
@@ -107,6 +107,7 @@ double estimaValor(float x, struct Spline *spl){
 }
 
 void imprimeSpline (struct Spline *spl){
-	printf("Polinomios: ");
+	printf("Coeficientes do spline cubico:\n");
 	imprimeArray2D(spl->polinomios, spl->entrada->n-1, 4);
+	printf("\n");
 }
