@@ -3,6 +3,23 @@
 #include <string.h>
 #include <math.h>
 
+#define ERRO_FALHA_NO_ARQUIVO 1
+#define ERRO_NUMERO_DE_PONTOS_DIFERENTES 2
+#define ERRO_DE_ALOCACAO_DE_MEMORIA 3
+void erro(int);
+void erro(int e){
+	switch (e){
+		case ERRO_FALHA_NO_ARQUIVO:
+			printf("Falha ao abrir arquivo\n");
+			break;
+		case ERRO_NUMERO_DE_PONTOS_DIFERENTES:
+			printf("Quantidade de pontos nao coicidem\n");
+			break;
+		case ERRO_DE_ALOCACAO_DE_MEMORIA:
+			printf("Erro de alocação de memória\n");
+			break;
+	}
+}
 
 //
 /// Entrada
@@ -43,15 +60,30 @@ double integra(struct Spline *spl, float a, float b, int n);
 void imprimeArray(double* A, int size_A);
 void imprimeArray2D(double** A, int linhas, int colunas);
 
-int main(void) {
-	struct Entrada *entrada1 = lerArquivo("entrada2.csv");
-	struct Spline *spl = criaSpline(entrada1);
+int main(int argc, char *argv[]){
+	char* nomeDoArquivo;
+	if (argc < 2) {
+		printf("Forneca o nome do arquivo\n");
+		return 0;
+	} else {
+		nomeDoArquivo = argv[1];
+	}
+
+	struct Entrada *entrada = lerArquivo(nomeDoArquivo);
+	if (entrada == NULL) {
+		return 1;
+	}
+	struct Spline *spl = criaSpline(entrada);
 	imprimeSpline(spl);
-	/*estimaValor(0.5, spl);*/
-	printf("estimativa %f \n", estimaValor(0.5, spl));
-	printf("f'(0,5): %f\n", deriva(spl, 0.5, 0.01, 1));
-	printf("f''(0,5): %f\n", deriva(spl, 0.5, 0.01, 2));
-	printf("Integral de 0 a 1: %f\n", integra(spl, 0, 1, 10));
+	estimaValor(0.5, spl);
+	printf("estimativa %lf \n", estimaValor(0.5, spl));
+	printf("f'(0,5): %lf\n", deriva(spl, 0.5, 0.01, 1));
+	printf("f''(0,5): %lf\n", deriva(spl, 0.5, 0.01, 2));
+	printf("Integral de 0 a 1: %lf\n", integra(spl, 0, 1, 10));
+	int i;
+	for (i = 0; i < entrada->n-1; ++i) {
+		printf("Integral de %lf a %lf: %lf\n", entrada->X[i], entrada->X[i+1], integra(spl, entrada->X[i], entrada->X[i+1], 1));
+	}
 	return 0;
 }
 
@@ -59,7 +91,7 @@ int main(void) {
 /// Entrada
 //////////////////////////////////////////////////////////////////////////////////////
 struct Entrada* lerArquivo(char *nomeDoArquivo){
-	int i,j;
+	int i=0,j=0;
 	char buffer[1024] ;
 	char *record, *line;
 	double data[3][1024];
@@ -76,17 +108,38 @@ struct Entrada* lerArquivo(char *nomeDoArquivo){
 		j = 0;
 		while(record != NULL)
 		{
-			data[i][j++] = atof(record) ;
+			data[i][j++] = strtod(record, NULL) ;
 			record = strtok(NULL,";");
+		}
+		if (i > 0 && j != data[0][0]) {
+			erro(ERRO_NUMERO_DE_PONTOS_DIFERENTES);
+			return NULL;
 		}
 		++i;
 	}
 	fclose(fp);
 
 	struct Entrada *entrada = malloc(sizeof(struct Entrada));
+	if (entrada == NULL) {
+		erro(ERRO_DE_ALOCACAO_DE_MEMORIA);
+		return NULL;
+	}
 	entrada-> n = (int)data[0][0];
-	entrada->X = (double *)malloc(entrada->n * sizeof(double));
-	entrada->Y = (double *)malloc(entrada->n * sizeof(double));
+
+	entrada->X = malloc(entrada->n * sizeof(double));
+	if (entrada->X == NULL) {
+		free(entrada);
+		erro(ERRO_DE_ALOCACAO_DE_MEMORIA);
+		return NULL;
+	}
+
+	entrada->Y = malloc(entrada->n * sizeof(double));
+	if (entrada->Y == NULL) {
+		free(entrada->X);
+		free(entrada);
+		erro(ERRO_DE_ALOCACAO_DE_MEMORIA);
+		return NULL;
+	}
 	for (i = 0; i < entrada->n; ++i) {
 		entrada->X[i] = data[1][i];
 		entrada->Y[i] = data[2][i];
@@ -112,9 +165,18 @@ struct Spline* criaSpline(struct Entrada *entrada){
 	double *X = entrada->X;
 	double *Y = entrada->Y;
 	double **A = (double **)malloc(n * sizeof(double*));
+	if (A == NULL) {
+		erro(ERRO_DE_ALOCACAO_DE_MEMORIA);
+		return NULL;
+	}
 	for (i = 0; i < (n-2); ++i) {
 		A[i] = (double *)calloc((n-1), sizeof(double));
-
+		if (A[i] == NULL) {
+			erro(ERRO_DE_ALOCACAO_DE_MEMORIA);
+			for (; i >= 0; --i)
+				free(A[i]);
+			return NULL;
+		}
 	}
 	double *a;
 
@@ -137,6 +199,14 @@ struct Spline* criaSpline(struct Entrada *entrada){
 	a[n-2] = 6/(X[i+1] - X[i])*(Y[i+1] - Y[i]) + 6/(X[i] - X[i-1])*(Y[i-1] - Y[i]);
 
 	double* F2 = (double *)malloc(n*sizeof(double));
+	if (F2 == NULL) {
+		erro(ERRO_DE_ALOCACAO_DE_MEMORIA);
+		for (i = 0; i < n-2; ++i)
+			free(A[i]);
+		free(A);
+		return NULL;
+	}
+
 	for (i = 0; i < n; ++i) {
 		F2[i] = 0;
 	}
@@ -235,7 +305,7 @@ double integra(struct Spline *spl, float a, float b, int n){
 	int i;
 	double h = (b-a)/n;
 	double E = 0;
-	for (i = 0; i < n+1; ++i) {
+	for (i = 1; i < n; ++i) {
 		if (i%2 == 0) {
 			E += 4*estimaValor(i*h, spl); 
 		} else {
@@ -252,9 +322,9 @@ void imprimeArray(double *A, int size_A){
 	int i;
 	printf("[ ");
 	for (i = 0; i < size_A-1; ++i) {
-		printf("%f, ", A[i]);
+		printf("%lf, ", A[i]);
 	}
-	printf("%f ", A[i]);
+	printf("%lf ", A[i]);
 	printf("]\n");
 }
 
