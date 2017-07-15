@@ -1,6 +1,7 @@
 #ifndef _SPLINE_H_
 #define _SPLINE_H_
 
+#include <stdio.h>
 #include "entrada-e-saida.h"
 
 struct Spline {
@@ -9,7 +10,8 @@ struct Spline {
 };
 
 struct Spline* criaSpline(struct Entrada *entrada);
-void imprimeSpline (struct Spline *spl);
 double estimaValor (struct Spline *spl, float x);
+void imprimeSpline (FILE* fp, struct Spline *spl);
+void freeSpline (struct Spline *spl);
 
 #endif

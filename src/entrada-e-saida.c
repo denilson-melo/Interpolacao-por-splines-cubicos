@@ -3,7 +3,6 @@
 #include <string.h>
 #include "entrada-e-saida.h"
 #include "erro.h"
-#include "helpers.h"
 
 struct Entrada* lerArquivo(char *nomeDoArquivo){
 	int i=0,j=0;
@@ -15,7 +14,7 @@ struct Entrada* lerArquivo(char *nomeDoArquivo){
 	FILE *fp = fopen(nomeDoArquivo,"r");
 	if(fp == NULL)
 	{
-		printf("\n Erro ao abrir arquivo");
+		erro(ERRO_FALHA_NO_ARQUIVO);
 		return NULL;
 	}
 
@@ -84,29 +83,45 @@ struct Entrada* lerArquivo(char *nomeDoArquivo){
 		entrada->F[i] = data[2][i];
 	}
 
-	imprimeEntrada(entrada);
 	return entrada;
 }
 
 void freeEntrada(struct Entrada* entrada) {
-	printf("LIBERANDO TUDO\n");
 	free(entrada->X);
 	free(entrada->Y);
 	free(entrada->F);
-	printf("LIBERED TUDO\n");
 }
 
-void imprimeEntrada (struct Entrada *entrada) {
-	printf("Entrada: \n");
-	printf("X: ");
-	imprimeArray(entrada->X, entrada->n);
-	printf("Y: ");
-	imprimeArray(entrada->Y, entrada->n);
-	printf("F: ");
+void imprimeEntrada (FILE* fp, struct Entrada *entrada) {
+	fprintf(fp, "Entrada: \n");
+	fprintf(fp, "X: ");
+	imprimeArray(fp, entrada->X, entrada->n);
+	fprintf(fp, "Y: ");
+	imprimeArray(fp, entrada->Y, entrada->n);
+	fprintf(fp, "F: ");
 	if (entrada->nF != 0) {
-		imprimeArray(entrada->F, entrada->nF);
+		imprimeArray(fp, entrada->F, entrada->nF);
 	} else {
-		printf("[]");
+		fprintf(fp, "[]");
 	}
-	printf("\n");
+	fprintf(fp, "\n");
+}
+
+void imprimeArray(FILE* fp, double *A, int size_A){
+	int i;
+	fprintf(fp, "[ ");
+	for (i = 0; i < size_A-1; ++i) {
+		fprintf(fp, "%lf, ", A[i]);
+	}
+	fprintf(fp, "%lf ", A[i]);
+	fprintf(fp, "]\n");
+}
+
+void imprimeArray2D(FILE* fp, double** A, int linhas, int colunas){
+	int i;
+	fprintf(fp, "[\n");
+	for (i = 0; i < linhas; ++i) {
+		imprimeArray(fp, A[i], colunas);
+	}
+	fprintf(fp, "]\n");
 }

@@ -7,7 +7,6 @@
 #include "derivacao-e-integracao.h"
 #include "spline.h"
 #include "erro.h"
-#include "helpers.h"
 
 int main(int argc, char *argv[]){
 	char* nomeDoArquivo;
@@ -24,33 +23,48 @@ int main(int argc, char *argv[]){
 	}
 
 	printf("Interpolando os pontos de entrada com splines cubicos...\n");
-	printf("Pronto.\n");
 
 	struct Spline *spl = criaSpline(entrada);
-	imprimeSpline(spl);
+
+	printf("Pronto.\n");
 
 	int i;
 	float x; 
 
-	printf("Avaliando f(x) f'(x) f''(x) nos pontos:\n");
-	imprimeArray(entrada->F, entrada->nF);
-	printf("\n");
+	char* nomeDoArquivoDeSaida = malloc((strlen(nomeDoArquivo) + 5) * sizeof(char));
+	sprintf(nomeDoArquivoDeSaida, "%s.out", nomeDoArquivo);
+	FILE *fp = fopen(nomeDoArquivoDeSaida,"w");
+	if(fp == NULL)
+	{
+		erro(ERRO_FALHA_NO_ARQUIVO);
+		return 1;
+	}
+
+	imprimeSpline(fp, spl);
+	fprintf(fp, "Avaliando f(x) f'(x) f''(x) nos pontos:\n");
+	imprimeArray(fp, entrada->F, entrada->nF);
+	fprintf(fp, "\n");
 
 	for (i = 0; i < entrada->nF; ++i) {
 		x = entrada->F[i];
-		printf("x: %f\n", x);
-		printf("f(x): %lf\n", estimaValor(spl, x));
-		printf("f'(x): %lf\n", deriva(spl, x, 0.01, 1));
-		printf("f''(x): %lf\n", deriva(spl, x, 0.01, 2));
-		printf("\n");
+		fprintf(fp, "x     : %f\n", x);
+		fprintf(fp, "f(x)  : %0.31f\n", estimaValor(spl, x));
+		fprintf(fp, "f'(x) : %0.31f\n", deriva(spl, x, 0.0001, 1));
+		fprintf(fp, "f''(x): %0.31f\n", deriva(spl, x, 0.0001, 2));
+		fprintf(fp, "\n");
 	}
 
 	float a = entrada->X[0];
 	float b = entrada->X[entrada->n-1];
-	printf("Integral do spline de %f a %f:\n%lf\n", a, b, integra(spl, a, b, 10));
-	printf("Integrais dos intervalos do spline:\n");
+	fprintf(fp, "Integral do spline de %f a %f:\n%0.31f\n", a, b, integra(spl, a, b, 100));
+	fprintf(fp, "Integrais dos intervalos do spline:\n");
 	for (i = 0; i < entrada->n-1; ++i) {
-		printf("de %lf a %lf: %lf\n", entrada->X[i], entrada->X[i+1], integra(spl, entrada->X[i], entrada->X[i+1], 1));
+		fprintf(fp, "de %lf a %lf: %0.31f\n", entrada->X[i], entrada->X[i+1], integra(spl, entrada->X[i], entrada->X[i+1], 1));
 	}
+	printf("As saidas do programa foram impressas em: '%s'\n", nomeDoArquivoDeSaida);
+	fclose(fp);
+
+	freeEntrada(entrada);
+	freeSpline(spl);
 	return 0;
 }

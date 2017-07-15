@@ -22,9 +22,9 @@ double integra(struct Spline *spl, float a, float b, int n){
 	double E = 0;
 	for (i = 1; i < n; ++i) {
 		if (i%2 == 0) {
-			E += 4*estimaValor(spl, i*h); 
+			E += 2*estimaValor(spl, i*h); 
 		} else {
-			E += 2*estimaValor(spl, i*h);       
+			E += 4*estimaValor(spl, i*h);       
 		}
 	}
 	return (h/3)*(estimaValor(spl, a) + E + estimaValor(spl, b));

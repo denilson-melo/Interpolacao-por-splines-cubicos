@@ -1,17 +1,18 @@
-#include <stdio.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <math.h>
+#include <float.h>
 #include "spline.h"
 #include "erro.h"
 #include "sela.h"
-#include "helpers.h"
+#include "entrada-e-saida.h"
 
-struct Spline* criaSpline(struct Entrada *entrada){
+struct Spline* criaSpline(struct Entrada* entrada){
 	int i;
 	int n = entrada->n;
-	double *X = entrada->X;
-	double *Y = entrada->Y;
-	double **A = (double **)malloc(n * sizeof(double*));
+	double* X = entrada->X;
+	double* Y = entrada->Y;
+	double** A = (double **)malloc(n * sizeof(double*));
 	if (A == NULL) {
 		erro(ERRO_DE_ALOCACAO_DE_MEMORIA);
 		return NULL;
@@ -25,8 +26,8 @@ struct Spline* criaSpline(struct Entrada *entrada){
 			return NULL;
 		}
 	}
-	double *a;
 
+	double* a;
 	i = 1;
 	a = A[i-1];
 	a[i-1] = 2*(X[i+1] - X[i-1]);
@@ -45,7 +46,7 @@ struct Spline* criaSpline(struct Entrada *entrada){
 	a[i-1] = 2*(X[i+1] - X[i-1]);
 	a[n-2] = 6/(X[i+1] - X[i])*(Y[i+1] - Y[i]) + 6/(X[i] - X[i-1])*(Y[i-1] - Y[i]);
 
-	double* F2 = (double *)malloc(n*sizeof(double));
+	double* F2 = calloc(n, sizeof(double));
 	if (F2 == NULL) {
 		erro(ERRO_DE_ALOCACAO_DE_MEMORIA);
 		for (i = 0; i < n-2; ++i)
@@ -54,10 +55,16 @@ struct Spline* criaSpline(struct Entrada *entrada){
 		return NULL;
 	}
 
-	for (i = 0; i < n; ++i) {
-		F2[i] = 0;
-	}
-	gaussSeidel(A, n-2, F2+1, 1, 500);
+	struct RetornoGaussSeidel retornoGaussSeidel = gaussSeidel(
+			A,     //Matriz
+			n-2,   //Tamanho
+			F2+1,  //Estimativa inicial
+			1,     //Relaxamento(w)
+			DBL_MIN, //Tolerancia
+			500);  //Máximo de iterações
+
+	printf("ITER %d\n", retornoGaussSeidel.iteracoes);
+	printf("ERRO %lf\n", retornoGaussSeidel.erro);
 
 	struct Spline *spl = malloc(sizeof(struct Spline));
 	if (F2 == NULL) {
@@ -89,9 +96,9 @@ struct Spline* criaSpline(struct Entrada *entrada){
 	return spl;
 }
 
-double estimaValor(struct Spline *spl, float x){
+double estimaValor(struct Spline* spl, float x){
 	int i;
-	double *X = spl->entrada->X;
+	double* X = spl->entrada->X;
 	for (i = 0; i < spl->entrada->n-1; ++i) {
 		if (x <= X[i+1]) {
 			i += 1;
@@ -106,8 +113,17 @@ double estimaValor(struct Spline *spl, float x){
 	);
 }
 
-void imprimeSpline (struct Spline *spl){
-	printf("Coeficientes do spline cubico:\n");
-	imprimeArray2D(spl->polinomios, spl->entrada->n-1, 4);
-	printf("\n");
+void imprimeSpline (FILE* fp, struct Spline* spl){
+	fprintf(fp, "Coeficientes do spline cubico:\n");
+	imprimeArray2D(fp, spl->polinomios, spl->entrada->n-1, 4);
+	fprintf(fp, "\n");
+}
+
+void freeSpline (struct Spline* spl){
+	int i;
+	for (i = 0; i < 4; ++i) {
+		free(spl->polinomios[i]);
+	}
+	free(spl->polinomios);
+	free(spl);
 }
