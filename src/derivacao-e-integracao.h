@@ -3,7 +3,18 @@
 
 #include "spline.h"
 
-double deriva(struct Spline *spl, float x, float h, int ordem);
-double integra(struct Spline *spl, float a, float b, int n);
+// Derivação numérica pela fórmula de 3 pontos centrada
+double deriva(struct Spline *spl,
+		float x,  // Ponto
+		double h, // h da derivação
+		int ordem // Ordem 1 ou 2
+		);
+
+// Integração numérica pela fórmula de Simpson composta
+double integra(struct Spline *spl,
+		float a, // Início do intervalo
+		float b, // Fim do intervalo
+		int n    // Numero de subdivisões);
+		);
 
 #endif
